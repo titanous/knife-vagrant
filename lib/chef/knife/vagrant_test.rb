@@ -14,7 +14,7 @@ module KnifePlugins
       require 'chef/node'
       require 'chef/api_client'
     end
- 
+
     # Default is nil here because if :cwd passed to the Vagrant::Environment object is nil,
     # it defaults to Dir.pwd, which is the cwd of the running process.
     option :vagrant_dir,
@@ -22,14 +22,14 @@ module KnifePlugins
       :long => '--vagrant-dir PATH',
       :description => "Path to vagrant project directory.  Defaults to cwd (#{Dir.pwd}) if not specified",
       :default => Dir.pwd
-      
+
     option :vagrant_run_list,
       :short => "-r RUN_LIST",
       :long => "--vagrant-run-list RUN_LIST",
       :description => "Comma separated list of roles/recipes to apply",
       :proc => lambda { |o| o.split(/[\s,]+/) },
       :default => []
- 
+
     option :box,
       :short => '-b BOX',
       :long => '--box BOX',
@@ -53,7 +53,7 @@ module KnifePlugins
       :long => '--memsize MEMORY',
       :description => 'Amount of RAM to allocate to provisioned VM, in MB.  Defaults to 1024',
       :default => 1024
-  
+
     option :chef_loglevel,
       :short => '-l LEVEL',
       :long => '--chef-loglevel LEVEL',
@@ -95,34 +95,45 @@ module KnifePlugins
       EOF
       file
     end
-      
+
     def write_vagrantfile(path, content)
       File.open(path, 'w') { |f| f.write(content) }
     end
-  
-    def cleanup(path)
-      File.delete(path)
+
+    def vagrant
+      @vagrant_env ||= Vagrant::Environment.new(:cwd => config[:vagrant_dir], :ui_class => Vagrant::UI::Colored)
     end
-    
+
+    def cleanup(path)
+      yes = config[:yes]
+      config[:yes] = true
+      vagrant.cli %w[destroy --force]
+      File.delete(path)
+      delete_object(Chef::Node, config[:hostname])
+      delete_object(Chef::ApiClient, config[:hostname])
+      config[:yes] = yes
+    end
+
     def run
-      ui.msg('Loading vagrant environment..')
       Dir.chdir(config[:vagrant_dir])
       vagrantfile = "#{config[:vagrant_dir]}/Vagrantfile"
+      ui.msg('Loading vagrant environment...')
+
+      if File.exist?(vagrantfile)
+        ui.msg('Vagrantfile already exists, cleaning up last run...')
+        cleanup(vagrantfile)
+      end
+
       write_vagrantfile(vagrantfile, build_vagrantfile)
-      @vagrant_env = Vagrant::Environment.new(:cwd => config[:vagrant_dir], :ui_class => Vagrant::UI::Colored)
-      @vagrant_env.load!
+      vagrant.load!
       begin
-        @vagrant_env.cli("up")
+        vagrant.cli('up')
       rescue
         raise # I'll put some error handling here later.
       ensure
         if config[:destroy]
           ui.confirm("Destroy vagrant box #{config[:box]} and delete chef node and client")
-          config[:yes] = true
-          args = %w[ destroy --force ]
-          @vagrant_env.cli(args)
-          delete_object(Chef::Node, config[:hostname])
-          delete_object(Chef::ApiClient, config[:hostname])
+          cleanup(vagrantfile)
         end
       end
     end
