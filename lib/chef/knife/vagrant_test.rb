@@ -21,7 +21,7 @@ module KnifePlugins
       :short => '-D PATH',
       :long => '--vagrant-dir PATH',
       :description => "Path to vagrant project directory.  Defaults to cwd (#{Dir.pwd}) if not specified",
-      :default => nil
+      :default => Dir.pwd
       
     option :vagrant_run_list,
       :short => "-r RUN_LIST",
@@ -86,9 +86,7 @@ module KnifePlugins
             chef.validation_key_path = "#{Chef::Config[:validation_key]}"
             chef.validation_client_name = "#{Chef::Config[:validation_client_name]}"
             chef.node_name = "#{config[:hostname]}"
-            chef.provisioning_path = "#{Chef::Config[:provisioning_path]}"
             chef.log_level = :#{config[:chef_loglevel].downcase}
-            chef.environment = "#{Chef::Config[:environment]}"
             chef.run_list = [
               #{build_runlist(config[:vagrant_run_list])}
             ]
