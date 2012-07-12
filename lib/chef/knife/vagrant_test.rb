@@ -112,6 +112,7 @@ module KnifePlugins
       delete_object(Chef::Node, config[:hostname])
       delete_object(Chef::ApiClient, config[:hostname])
       config[:yes] = yes
+      @vagrant_env = nil
     end
 
     def run
