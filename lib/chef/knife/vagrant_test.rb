@@ -40,7 +40,7 @@ module KnifePlugins
       :short => '-H HOSTNAME',
       :long => '--hostname HOSTNAME',
       :description => 'Hostname to be set as hostname on vagrant box when provisioned',
-      :default => 'vagrant_test'
+      :default => 'vagrant-test'
 
     option :box_url,
       :short => '-U URL',
