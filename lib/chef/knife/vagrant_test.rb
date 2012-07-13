@@ -87,6 +87,7 @@ module KnifePlugins
             chef.validation_client_name = "#{Chef::Config[:validation_client_name]}"
             chef.node_name = "#{config[:hostname]}"
             chef.log_level = :#{config[:chef_loglevel].downcase}
+            chef.encrypted_data_bag_secret_key_path = '.chef/encrypted_data_bag_secret'
             chef.run_list = [
               #{build_runlist(config[:vagrant_run_list])}
             ]
